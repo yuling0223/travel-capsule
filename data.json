@@ -16,12 +16,6 @@
         "content": "kakaot://"
       },
       {
-        "id": "1788969524088",
-        "type": "file",
-        "name": "行程清單",
-        "content": "https://www.icloud.com/notes/0f5g6dUq1waIrGXXsSQ3WnrKA"
-      },
-      {
         "id": "1788970114622",
         "type": "note",
         "name": "美食筆記",
@@ -32,6 +26,12 @@
         "type": "file",
         "name": "美食清單",
         "content": "https://www.icloud.com/notes/0afOzKWHggxkjiLN3f_QsdaYg"
+      },
+      {
+        "id": "1788969524088",
+        "type": "file",
+        "name": "行程清單",
+        "content": "https://www.icloud.com/notes/0f5g6dUq1waIrGXXsSQ3WnrKA"
       }
     ]
   },
