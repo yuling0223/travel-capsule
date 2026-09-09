@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Travel Capsule - 雲端硬碟連結優化版</title>
+    <title>Travel Capsule - 拖拉排序雲端版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -136,6 +136,7 @@
         let activeCapsuleId = null;
         let activeItemId = null;
         let isEditingItem = false;
+        let draggedIndex = null; // 用於拖拉排序
 
         const countryApps = {
             kr: {
@@ -245,7 +246,7 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data",
+                message: "Update travel capsules order and data",
                 content: base64Content
             };
             if (fileSha) bodyData.sha = fileSha;
@@ -300,7 +301,7 @@
 
             if (currentView === 'home') {
                 titleEl.textContent = "📦 Travel Capsule";
-                subtitleEl.textContent = "選擇你的旅行包裝或建立新行程";
+                subtitleEl.textContent = "選擇你的旅行包裝或建立新行程（可拖拉調整順序）";
                 
                 if (capsules.length === 0) {
                     container.innerHTML = `
@@ -312,16 +313,24 @@
                     return;
                 }
 
-                let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
-                capsules.forEach(cap => {
+                let html = '<div class="space-y-3" id="capsule-list">';
+                capsules.forEach((cap, index) => {
                     const itemCount = (cap.items || []).length;
                     html += `
-                        <div onclick="goToDetail('${cap.id}')" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center group">
-                            <div>
-                                <h2 class="font-bold text-slate-800 text-base group-hover:text-blue-600 transition">${cap.title}</h2>
-                                <p class="text-xs text-slate-400 mt-1">包含 ${itemCount} 項資源與 App 捷徑</p>
+                        <div draggable="true" 
+                             ondragstart="onDragStartCapsule(event, ${index})" 
+                             ondragover="onDragOver(event)" 
+                             ondrop="onDropCapsule(event, ${index})"
+                             onclick="goToDetail('${cap.id}')" 
+                             class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center group">
+                            <div class="flex items-center space-x-3 overflow-hidden">
+                                <span class="text-slate-300 group-hover:text-slate-500 cursor-grab px-1 text-base select-none" title="按住拖拉排序">☰</span>
+                                <div class="truncate">
+                                    <h2 class="font-bold text-slate-800 text-base group-hover:text-blue-600 transition truncate">${cap.title}</h2>
+                                    <p class="text-xs text-slate-400 mt-0.5">包含 ${itemCount} 項資源與 App 捷徑</p>
+                                </div>
                             </div>
-                            <span class="text-slate-300 group-hover:text-blue-600 font-bold text-lg">›</span>
+                            <span class="text-slate-300 group-hover:text-blue-600 font-bold text-lg shrink-0 ml-2">›</span>
                         </div>
                     `;
                 });
@@ -333,9 +342,9 @@
                 if (!target) { goToHome(); return; }
 
                 titleEl.textContent = target.title;
-                subtitleEl.textContent = "行程專屬網頁、App 喚醒與備忘錄";
+                subtitleEl.textContent = "行程專屬網頁、App 喚醒與備忘錄（可拖拉調整順序）";
 
-                let itemsHtml = (target.items || []).map(item => {
+                let itemsHtml = (target.items || []).map((item, index) => {
                     let icon = '🌐';
                     let actionHtml = '';
                     
@@ -347,7 +356,6 @@
                         actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium" onclick="event.stopPropagation()">喚醒 App</a>`;
                     } else if (item.type === 'file') {
                         icon = '📁';
-                        // 如果內容是網址，右側按鈕直接變成「開啟檔案」，否則顯示「路徑」
                         if (item.content.startsWith('http')) {
                             actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-medium" onclick="event.stopPropagation()">開啟檔案</a>`;
                         } else {
@@ -359,8 +367,14 @@
                     }
 
                     return `
-                        <div onclick="goToItemDetail('${target.id}', '${item.id}')" class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group">
+                        <div draggable="true"
+                             ondragstart="onDragStartItem(event, ${index})"
+                             ondragover="onDragOver(event)"
+                             ondrop="onDropItem(event, ${index})"
+                             onclick="goToItemDetail('${target.id}', '${item.id}')" 
+                             class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group">
                             <div class="flex items-center space-x-3 overflow-hidden mr-2">
+                                <span class="text-slate-300 group-hover:text-slate-500 cursor-grab px-1 text-sm select-none" title="按住拖拉排序">☰</span>
                                 <span class="text-base shrink-0">${icon}</span>
                                 <div class="truncate">
                                     <p class="text-xs font-bold text-slate-700 group-hover:text-blue-600 truncate">${item.name}</p>
@@ -385,7 +399,7 @@
                         </button>
                     </div>
 
-                    <div class="space-y-3 mb-4">
+                    <div class="space-y-3 mb-4" id="item-list">
                         ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">這個包裝還空空如也，快點下方新增資料吧！</p>'}
                     </div>
 
@@ -403,7 +417,6 @@
                 titleEl.textContent = targetItem.name;
                 subtitleEl.textContent = "資源詳細資訊";
 
-                // 如果是檔案路徑且包含網址，在詳情頁額外提供一個明顯的開啟按鈕
                 let openDirectButton = '';
                 if (targetItem.type === 'file' && targetItem.content.startsWith('http')) {
                     openDirectButton = `<a href="${targetItem.content}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center">📁 開啟雲端檔案</a>`;
@@ -457,6 +470,51 @@
                 `;
             }
         }
+
+        // --- 拖拉排序事件處理函式 ---
+        function onDragStartCapsule(event, index) {
+            draggedIndex = index;
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function onDragOver(event) {
+            event.preventDefault(); // 必須阻止預設行為才能觸發 drop
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        async function onDropCapsule(event, targetIndex) {
+            event.preventDefault();
+            if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+            // 調整陣列順序
+            const movedItem = capsules.splice(draggedIndex, 1)[0];
+            capsules.splice(targetIndex, 0, movedItem);
+            draggedIndex = null;
+
+            render();
+            await saveDataToGitHub();
+        }
+
+        function onDragStartItem(event, index) {
+            draggedIndex = index;
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        async function onDropItem(event, targetIndex) {
+            event.preventDefault();
+            if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+            const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
+            if (targetCapsule && targetCapsule.items) {
+                const movedItem = targetCapsule.items.splice(draggedIndex, 1)[0];
+                targetCapsule.items.splice(targetIndex, 0, movedItem);
+                draggedIndex = null;
+
+                render();
+                await saveDataToGitHub();
+            }
+        }
+        // -----------------------------
 
         function toggleEditItem(status) {
             isEditingItem = status;
@@ -598,7 +656,7 @@
 
         async function createItem() {
             const capsuleId = document.getElementById('targetCapsuleId').value;
-            const type = document.getElementById('itemType').value;
+            const type = document.getElementById('itemType -> value' || 'itemType').value;
             const name = document.getElementById('itemName').value.trim();
             const errorBox = document.getElementById('modalError');
             
