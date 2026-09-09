@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Travel Capsule - 防誤觸安全版</title>
+    <title>Travel Capsule - 雙層架構雲端版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
-    <div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="max-w-4xl mx-auto px-4 py-6">
         <!-- 頂部標題與按鈕區 -->
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-xl sm:text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p class="text-xs sm:text-sm text-slate-500">旅遊包裝與 App 快速喚醒工具（GitHub 雲端同步）</p>
+                <h1 id="main-title" class="text-xl sm:text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
+                <p id="main-subtitle" class="text-xs sm:text-sm text-slate-500">旅遊包裝與 App 快速喚醒工具（GitHub 雲端同步）</p>
             </div>
-            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-                <button onclick="fetchDataFromGitHub()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition" title="重新載入/同步資料">
+            <div id="header-actions" class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                <button onclick="fetchDataFromGitHub()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition" title="重新同步資料">
                     🔄 同步
                 </button>
                 <button onclick="openConfigModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition">
@@ -37,9 +37,9 @@
 
         <div id="loading-text" class="text-center py-12 text-sm text-slate-400 hidden">正在從 GitHub 同步資料...</div>
 
-        <!-- 包裝列表容器 -->
-        <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            <!-- 動態渲染卡片位置 -->
+        <!-- 動態視圖容器 (首頁清單 or 詳情頁) -->
+        <div id="app-view">
+            <!-- 畫面會由 JavaScript 動態渲染 -->
         </div>
     </div>
 
@@ -117,7 +117,7 @@
         </div>
     </div>
 
-    <!-- 自訂美化確認對話框 (取代傳統簡陋的 alert/confirm) -->
+    <!-- 防誤觸確認對話框 -->
     <div id="confirmModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
             <h3 id="confirmTitle" class="text-base font-bold text-slate-900 mb-2">確定要刪除嗎？</h3>
@@ -132,7 +132,8 @@
     <script>
         let capsules = [];
         let fileSha = null;
-        let deleteActionCallback = null; // 用於確認對話框的動作暫存
+        let currentView = 'home'; // 'home' 或 'detail'
+        let activeCapsuleId = null; // 當前在詳情頁的包裝 ID
 
         const countryApps = {
             kr: {
@@ -174,7 +175,7 @@
                 fetchDataFromGitHub();
             } else {
                 document.getElementById('status-banner').classList.remove('hidden');
-                renderEmptyState("尚未設定 GitHub 憑證，請點擊右上角「設定」完成連線。");
+                render();
             }
         });
 
@@ -204,8 +205,9 @@
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
             const token = localStorage.getItem('gh_token');
-            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
+            if (!user || !repo || !token) return;
 
+            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
             document.getElementById('loading-text').classList.remove('hidden');
 
             try {
@@ -221,8 +223,6 @@
                     fileSha = data.sha;
                     const decodedContent = decodeURIComponent(escape(atob(data.content)));
                     capsules = JSON.parse(decodedContent);
-                } else {
-                    alert('讀取 GitHub 失敗，請檢查設定是否正確。');
                 }
             } catch (e) {
                 console.error(e);
@@ -236,13 +236,14 @@
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
             const token = localStorage.getItem('gh_token');
-            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
+            if (!user || !repo || !token) return;
 
+            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
             const jsonString = JSON.stringify(capsules, null, 2);
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data safely",
+                message: "Update travel capsules data",
                 content: base64Content
             };
             if (fileSha) bodyData.sha = fileSha;
@@ -265,6 +266,181 @@
                 console.error(e);
             }
         }
+
+        // 切換檢視畫面控制
+        function goToHome() {
+            currentView = 'home';
+            activeCapsuleId = null;
+            render();
+        }
+
+        function goToDetail(capsuleId) {
+            currentView = 'detail';
+            activeCapsuleId = capsuleId;
+            render();
+        }
+
+        // 主渲染分配函式
+        function render() {
+            const container = document.getElementById('app-view');
+            const titleEl = document.getElementById('main-title');
+            const subtitleEl = document.getElementById('main-subtitle');
+            const actionsEl = id => document.getElementById('header-actions');
+
+            if (currentView === 'home') {
+                titleEl.textContent = "📦 Travel Capsule";
+                subtitleEl.textContent = "選擇你的旅行包裝或建立新行程";
+                
+                if (capsules.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-6 shadow-sm">
+                            <p class="text-sm text-slate-400 mb-3">目前沒有任何旅行包裝</p>
+                            <button onclick="openNewCapsuleModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">建立第一個包裝</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
+                capsules.forEach(cap => {
+                    const itemCount = (cap.items || []).length;
+                    html += `
+                        <div onclick="goToDetail('${cap.id}')" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center group">
+                            <div>
+                                <h2 class="font-bold text-slate-800 text-base group-hover:text-blue-600 transition">${cap.title}</h2>
+                                <p class="text-xs text-slate-400 mt-1">包含 ${itemCount} 項資源與 App 捷徑</p>
+                            </div>
+                            <span class="text-slate-300 group-hover:text-blue-600 font-bold text-lg">›</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+
+            } else if (currentView === 'detail') {
+                const target = capsules.find(c => c.id == activeCapsuleId);
+                if (!target) { goToHome(); return; }
+
+                titleEl.textContent = target.title;
+                subtitleEl.textContent = "行程專屬網頁、App 喚醒與備忘錄";
+
+                let itemsHtml = (target.items || []).map(item => {
+                    let icon = '🌐';
+                    let actionHtml = '';
+                    
+                    if (item.type === 'link') {
+                        icon = '🌐';
+                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium">開啟</a>`;
+                    } else if (item.type === 'app') {
+                        icon = '📱';
+                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium">喚醒 App</a>`;
+                    } else if (item.type === 'file') {
+                        icon = '📁';
+                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-xl font-mono">路徑</span>`;
+                    } else if (item.type === 'note') {
+                        icon = '📝';
+                        actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-xl">備忘</span>`;
+                    }
+
+                    return `
+                        <div class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                            <div class="flex items-center space-x-3 overflow-hidden mr-2">
+                                <span class="text-base shrink-0">${icon}</span>
+                                <div class="truncate">
+                                    <p class="text-xs font-bold text-slate-700 truncate">${item.name}</p>
+                                    <p class="text-[11px] text-slate-400 truncate">${item.content}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                ${actionHtml}
+                                <button onclick="confirmDeleteItem('${target.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-base">×</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div class="mb-4 flex justify-between items-center">
+                        <button onclick="goToHome()" class="inline-flex items-center text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition">
+                            ⬅️ 返回清單
+                        </button>
+                        <button onclick="confirmDeleteCapsule('${target.id}')" class="text-xs text-slate-400 hover:text-red-500 font-medium">
+                            刪除此包裝
+                        </button>
+                    </div>
+
+                    <div class="space-y-3 mb-4">
+                        ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">這個包裝還空空如也，快點下方新增資料吧！</p>'}
+                    </div>
+
+                    <button onclick="openItemModal('${target.id}')" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-sm transition">
+                        + 新增資源 / 喚醒 App 到此包裝
+                    </button>
+                `;
+            }
+        }
+
+        // 新增與刪除互動邏輯
+        function openNewCapsuleModal() {
+            document.getElementById('capsuleModal').classList.remove('hidden');
+            document.getElementById('capsuleTitleInput').value = '';
+            document.getElementById('capsuleTitleInput').focus();
+        }
+        function closeNewCapsuleModal() { document.getElementById('capsuleModal').classList.add('hidden'); }
+
+        async function createCapsule() {
+            const title = document.getElementById('capsuleTitleInput').value.trim();
+            if (!title) return alert('請輸入包裝名稱');
+            
+            const newCap = {
+                id: Date.now().toString(),
+                title: title,
+                items: []
+            };
+            capsules.push(newCap);
+            closeNewCapsuleModal();
+            goToDetail(newCap.id); // 建立後直接進入該包裝詳情頁
+            await saveDataToGitHub();
+        }
+
+        function confirmDeleteCapsule(id) {
+            document.getElementById('confirmTitle').textContent = "確定要刪除這個旅行包裝嗎？";
+            document.getElementById('confirmDesc').textContent = "刪除後該包裝內的所有資料將同步移除。";
+            document.getElementById('confirmYesBtn').onclick = async function() {
+                closeConfirmModal();
+                capsules = capsules.filter(c => c.id !== id);
+                goToHome();
+                await saveDataToGitHub();
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function confirmDeleteItem(capsuleId, itemId) {
+            document.getElementById('confirmTitle').textContent = "確定要刪除這個項目嗎？";
+            document.getElementById('confirmDesc').textContent = "刪除後將無法復原。";
+            document.getElementById('confirmYesBtn').onclick = async function() {
+                closeConfirmModal();
+                const target = capsules.find(c => c.id == capsuleId);
+                if (target) {
+                    target.items = target.items.filter(i => i.id !== itemId);
+                    render();
+                    await saveDataToGitHub();
+                }
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+
+        function openItemModal(capsuleId) {
+            document.getElementById('targetCapsuleId').value = capsuleId;
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemType').value = 'link';
+            document.getElementById('modalError').classList.add('hidden');
+            handleTypeChange();
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+        function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
 
         function handleTypeChange() {
             const type = document.getElementById('itemType').value;
@@ -309,145 +485,6 @@
                 appSelect.appendChild(opt);
             });
         }
-
-        function render() {
-            const container = document.getElementById('capsule-container');
-            container.innerHTML = '';
-
-            if (capsules.length === 0) {
-                renderEmptyState("目前沒有任何旅行包裝，點擊右上角開始建立吧！");
-                return;
-            }
-
-            capsules.forEach(cap => {
-                let itemsHtml = (cap.items || []).map(item => {
-                    let icon = '🌐';
-                    let actionHtml = '';
-                    
-                    if (item.type === 'link') {
-                        icon = '🌐';
-                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg font-medium">開啟</a>`;
-                    } else if (item.type === 'app') {
-                        icon = '📱';
-                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-lg font-medium">喚醒 App</a>`;
-                    } else if (item.type === 'file') {
-                        icon = '📁';
-                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded font-mono">路徑</span>`;
-                    } else if (item.type === 'note') {
-                        icon = '📝';
-                        actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded">備忘</span>`;
-                    }
-
-                    return `
-                        <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                            <div class="flex items-center space-x-2 overflow-hidden mr-2">
-                                <span class="text-sm shrink-0">${icon}</span>
-                                <div class="truncate">
-                                    <p class="text-xs font-bold text-slate-700 truncate">${item.name}</p>
-                                    <p class="text-[11px] text-slate-400 truncate">${item.content}</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-1.5 shrink-0">
-                                ${actionHtml}
-                                <button onclick="confirmDeleteItem('${cap.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-base" title="刪除此項目">×</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between overflow-hidden';
-                card.innerHTML = `
-                    <div class="p-4 sm:p-5">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="font-bold text-slate-800 text-sm sm:text-base">${cap.title}</h2>
-                            <button onclick="confirmDeleteCapsule('${cap.id}')" class="text-slate-400 hover:text-red-500 text-xs">刪除包裝</button>
-                        </div>
-                        <div class="space-y-2 mb-3 max-h-60 overflow-y-auto pr-1">
-                            ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-4">這個包裝還空空如也，快新增資料吧！</p>'}
-                        </div>
-                    </div>
-                    <div class="bg-slate-50/50 px-4 sm:px-5 py-3 border-t border-slate-100 flex justify-between items-center">
-                        <button onclick="openItemModal('${cap.id}')" class="text-xs text-blue-600 hover:text-blue-700 font-bold">
-                            + 新增資料到此包裝
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function renderEmptyState(msg) {
-            document.getElementById('capsule-container').innerHTML = `
-                <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
-                    ${msg}
-                </div>
-            `;
-        }
-
-        function openNewCapsuleModal() {
-            document.getElementById('capsuleModal').classList.remove('hidden');
-            document.getElementById('capsuleTitleInput').value = '';
-            document.getElementById('capsuleTitleInput').focus();
-        }
-        function closeNewCapsuleModal() { document.getElementById('capsuleModal').classList.add('hidden'); }
-
-        async function createCapsule() {
-            const title = document.getElementById('capsuleTitleInput').value.trim();
-            if (!title) return alert('請輸入包裝名稱');
-            
-            const newCap = {
-                id: Date.now().toString(),
-                title: title,
-                items: []
-            };
-            capsules.push(newCap);
-            closeNewCapsuleModal();
-            render();
-            await saveDataToGitHub();
-        }
-
-        // 防誤觸確認對話框邏輯
-        function confirmDeleteCapsule(id) {
-            document.getElementById('confirmTitle').textContent = "確定要刪除這個旅行包裝嗎？";
-            document.getElementById('confirmDesc').textContent = "刪除後該包裝內的所有資料將同步移除。";
-            document.getElementById('confirmYesBtn').onclick = async function() {
-                closeConfirmModal();
-                capsules = capsules.filter(c => c.id !== id);
-                render();
-                await saveDataToGitHub();
-            };
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function confirmDeleteItem(capsuleId, itemId) {
-            document.getElementById('confirmTitle').textContent = "確定要刪除這個項目嗎？";
-            document.getElementById('confirmDesc').textContent = "刪除後將無法復原。";
-            document.getElementById('confirmYesBtn').onclick = async function() {
-                closeConfirmModal();
-                const target = capsules.find(c => c.id == capsuleId);
-                if (target) {
-                    target.items = target.items.filter(i => i.id !== itemId);
-                    render();
-                    await saveDataToGitHub();
-                }
-            };
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        function openItemModal(capsuleId) {
-            document.getElementById('targetCapsuleId').value = capsuleId;
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemType').value = 'link';
-            document.getElementById('modalError').classList.add('hidden');
-            handleTypeChange();
-            document.getElementById('itemModal').classList.remove('hidden');
-        }
-        function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
 
         async function createItem() {
             const capsuleId = document.getElementById('targetCapsuleId').value;
