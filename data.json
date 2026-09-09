@@ -10,6 +10,12 @@
         "content": "navermap://"
       },
       {
+        "id": "1788977388222",
+        "type": "app",
+        "name": "Google calendar",
+        "content": "googlecalendar://⁠"
+      },
+      {
         "id": "1788967128106",
         "type": "app",
         "name": "計程車",
@@ -38,12 +44,6 @@
         "type": "link",
         "name": "富邦旅保（靈）",
         "content": "https://fubon.one/W2f2a"
-      },
-      {
-        "id": "1788977388222",
-        "type": "app",
-        "name": "Google calendar",
-        "content": "googlecalendar://⁠"
       }
     ]
   },
