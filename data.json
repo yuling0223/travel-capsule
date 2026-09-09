@@ -8,12 +8,6 @@
         "type": "app",
         "name": "地圖",
         "content": "navermap://"
-      },
-      {
-        "id": "1788966793617",
-        "type": "app",
-        "name": "計程車",
-        "content": "kakaot://"
       }
     ]
   },
