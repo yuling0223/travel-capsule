@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Capsule - GitHub 雲端卡片版</title>
+    <title>Travel Capsule - 雲端旅行情境整合器</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 py-8">
         <!-- 頂部標題與按鈕區 -->
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b pb-4 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p class="text-sm text-slate-500">將每次旅行所需的網頁、雲端資料與筆記完美打包（GitHub 雲端同步）</p>
+                <p class="text-sm text-slate-500">將每次旅行所需的網頁、雲端資料、筆記與 App 完美打包</p>
             </div>
             <div class="flex items-center space-x-2">
                 <button onclick="openConfigModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition">
@@ -34,8 +34,8 @@
 
         <div id="loading-text" class="text-center py-12 text-sm text-slate-400 hidden">正在從 GitHub 同步資料...</div>
 
-        <!-- 包裝列表容器 (維持原本的卡片 Grid 網格佈局) -->
-        <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- 網格容器 (Grid) -->
+        <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             <!-- 動態渲染卡片位置 -->
         </div>
     </div>
@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <!-- 建立新包裝彈跳視窗 Modal -->
+    <!-- 建立新包裝 Modal -->
     <div id="capsuleModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 class="text-lg font-bold mb-4">建立新的旅行包裝</h3>
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- 新增資源彈跳視窗 Modal -->
+    <!-- 新增資源 Modal (包含 App 捷徑選項) -->
     <div id="itemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 class="text-lg font-bold mb-4">新增資源到包裝</h3>
@@ -87,18 +87,18 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">資源類型</label>
                     <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                        <option value="link">🌐 網頁/雲端連結 (URL)</option>
-                        <option value="file">📁 本機/雲端檔案路徑</option>
-                        <option value="note">📝 隨手筆記/資訊</option>
+                        <option value="link">🌐 網頁 / 雲端連結 (URL)</option>
+                        <option value="app">📱 手機 App 捷徑 (App Scheme)</option>
+                        <option value="note">📝 隨手筆記 / 資訊 / 備忘</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">名稱 / 標題</label>
-                    <input type="text" id="itemName" placeholder="例如：Naver Map / 飯店地址" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="itemName" placeholder="例如：Naver Map / Google Maps" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
-                    <input type="text" id="itemContent" placeholder="https://... 或 檔案路徑 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / App 喚醒協定</label>
+                    <input type="text" id="itemContent" placeholder="https://... 或 nmap:// (App Scheme)" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
             <div class="flex justify-end space-x-2">
@@ -147,7 +147,6 @@
             fetchDataFromGitHub();
         }
 
-        // 從 GitHub 讀取 data.json
         async function fetchDataFromGitHub() {
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
@@ -181,7 +180,6 @@
             render();
         }
 
-        // 將資料寫回 GitHub 的 data.json
         async function saveDataToGitHub() {
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
@@ -192,7 +190,7 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data",
+                message: "Update travel capsules data with apps",
                 content: base64Content
             };
             if (fileSha) {
@@ -222,7 +220,6 @@
             }
         }
 
-        // 渲染主畫面（維持原本的卡片 Grid 佈局）
         function render() {
             const container = document.getElementById('capsule-container');
             container.innerHTML = '';
@@ -240,16 +237,16 @@
                     if (item.type === 'link') {
                         icon = '🌐';
                         actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-medium">開啟</a>`;
-                    } else if (item.type === 'file') {
-                        icon = '📁';
-                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded font-mono">路徑</span>`;
+                    } else if (item.type === 'app') {
+                        icon = '📱';
+                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-medium">打開App</a>`;
                     } else if (item.type === 'note') {
                         icon = '📝';
                         actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded">備忘</span>`;
                     }
 
                     return `
-                        <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg hover:bg-slate-100/80 transition group">
+                        <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg hover:bg-slate-100/80 transition">
                             <div class="flex items-center space-x-2 overflow-hidden mr-2">
                                 <span class="text-sm">${icon}</span>
                                 <div class="truncate">
@@ -266,12 +263,12 @@
                 }).join('');
 
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden';
+                card.className = 'bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between overflow-hidden';
                 card.innerHTML = `
                     <div class="p-5">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="font-bold text-slate-800 text-base">${cap.title}</h2>
-                            <button onclick="deleteCapsule('${cap.id}')" class="text-slate-400 hover:text-red-500 text-sm">刪除包裝</button>
+                            <button onclick="deleteCapsule('${cap.id}')" class="text-slate-400 hover:text-red-500 text-xs">刪除包裝</button>
                         </div>
                         <div class="space-y-2 mb-4 max-h-60 overflow-y-auto">
                             ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-4">這個包裝還空空如也，快新增資料吧！</p>'}
@@ -289,17 +286,16 @@
 
         function renderEmptyState(msg) {
             document.getElementById('capsule-container').innerHTML = `
-                <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-300 p-6">
+                <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
                     ${msg}
                 </div>
             `;
         }
 
-        // 控制 Modal 互動
         function openNewCapsuleModal() {
             document.getElementById('capsuleModal').classList.remove('hidden');
             document.getElementById('capsuleTitleInput').value = '';
-            document.getElementById('capsuleTitleInput').focus();
+            document.getElementById('capsuleTitleInput'].focus();
         }
         function closeNewCapsuleModal() { document.getElementById('capsuleModal').classList.add('hidden'); }
 
