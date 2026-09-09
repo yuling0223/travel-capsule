@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Capsule - App 快速喚醒版</title>
+    <title>Travel Capsule - 依國家喚醒 App 版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -14,7 +14,7 @@
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b pb-4 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p class="text-sm text-slate-500">一鍵打包旅遊網頁、App 捷徑與雲端資料（GitHub 雲端同步）</p>
+                <p class="text-sm text-slate-500">依國家與情境打包旅遊網頁、App 捷徑與雲端資料（GitHub 雲端同步）</p>
             </div>
             <div class="flex items-center space-x-2">
                 <button onclick="openConfigModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition">
@@ -88,7 +88,7 @@
                     <label class="block text-xs font-semibold text-slate-500 mb-1">資源類型</label>
                     <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-sm bg-white" onchange="handleTypeChange()">
                         <option value="link">🌐 一般網頁連結 (URL)</option>
-                        <option value="app">📱 喚醒手機 App (Naver/Google Map等)</option>
+                        <option value="app">📱 喚醒手機 App (依國家選擇)</option>
                         <option value="file">📁 檔案/雲端硬碟路徑</option>
                         <option value="note">📝 隨手筆記/資訊</option>
                     </select>
@@ -113,6 +113,38 @@
     <script>
         let capsules = [];
         let fileSha = null;
+
+        // 各國常用 App 對應清單
+        const countryApps = {
+            kr: {
+                name: "🇰🇷 韓國",
+                apps: [
+                    { name: "Naver Map (地圖/導航)", scheme: "navermap://" },
+                    { name: "Kakao Map (地圖)", scheme: "kakaomap://" },
+                    { name: "Kakao T (計程車/叫車)", scheme: "kakaot://" },
+                    { name: "Papago (翻譯)", scheme: "papago://" },
+                    { name: "Subway Korea (地鐵)", scheme: "subwaykorea://" }
+                ]
+            },
+            jp: {
+                name: "🇯🇵 日本",
+                apps: [
+                    { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
+                    { name: "Yahoo!乘換案內 (地鐵/轉乘)", scheme: "yahootransit://" },
+                    { name: "Suica / Apple Wallet (交通卡)", scheme: "suica://" },
+                    { name: "Tabelog (美食)", scheme: "tabelog://" }
+                ]
+            },
+            global: {
+                name: "🌍 通用 / 其他",
+                apps: [
+                    { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
+                    { name: "Uber (叫車)", scheme: "uber://" },
+                    { name: "Google Translate (翻譯)", scheme: "googletranslate://" },
+                    { name: "Airbnb (住宿)", scheme: "airbnb://" }
+                ]
+            }
+        };
 
         window.addEventListener('DOMContentLoaded', () => {
             const user = localStorage.getItem('gh_user');
@@ -149,7 +181,6 @@
             fetchDataFromGitHub();
         }
 
-        // 從 GitHub 讀取 data.json
         async function fetchDataFromGitHub() {
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
@@ -183,7 +214,6 @@
             render();
         }
 
-        // 將資料寫回 GitHub 的 data.json
         async function saveDataToGitHub() {
             const user = localStorage.getItem('gh_user');
             const repo = localStorage.getItem('gh_repo');
@@ -194,7 +224,7 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data with App launcher",
+                message: "Update travel capsules data with Country-based App launcher",
                 content: base64Content
             };
             if (fileSha) {
@@ -224,29 +254,49 @@
             }
         }
 
-        // 切換新增項目時的欄位呈現
+        // 動態切換新增項目欄位（支援國家選單聯動）
         function handleTypeChange() {
             const type = document.getElementById('itemType').value;
             const container = document.getElementById('contentFieldContainer');
             
             if (type === 'app') {
                 container.innerHTML = `
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">選擇要喚醒的 App / 或自訂 Scheme</label>
-                    <select id="itemContent" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2">
-                        <option value="navermap://">🗺️ Naver Map (導航)</option>
-                        <option value="kakaomap://">🗺️ Kakao Map (導航)</option>
-                        <option value="comgooglemaps://">🗺️ Google Maps (地圖)</option>
-                        <option value="kakaot://">🚕 Kakao T (叫車/計程車)</option>
-                        <option value="papago://">🗣️ Papago (翻譯)</option>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">1. 選擇國家</label>
+                    <select id="appCountrySelect" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2" onchange="updateAppOptions()">
+                        <option value="kr">🇰🇷 韓國</option>
+                        <option value="jp">🇯🇵 日本</option>
+                        <option value="global">🌍 通用 / 其他</option>
                     </select>
-                    <input type="text" id="customAppInput" placeholder="或直接輸入自訂 App Scheme (例如 instagram://)" class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">2. 選擇常用 App</label>
+                    <select id="itemContent" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2">
+                        <!-- 動態帶入 -->
+                    </select>
+
+                    <input type="text" id="customAppInput" placeholder="或手動輸入自訂 App Scheme (例如 instagram://)" class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
                 `;
+                updateAppOptions(); // 初始化載入韓國的 App
             } else {
                 container.innerHTML = `
                     <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
                     <input type="text" id="itemContent" placeholder="https://... 或 檔案路徑 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 `;
             }
+        }
+
+        // 根據選擇的國家更新 App 下拉清單
+        function updateAppOptions() {
+            const countryKey = document.getElementById('appCountrySelect').value;
+            const appSelect = document.getElementById('itemContent');
+            const apps = countryApps[countryKey].apps;
+
+            appSelect.innerHTML = '';
+            apps.forEach(app => {
+                const opt = document.createElement('option');
+                opt.value = app.scheme;
+                opt.textContent = app.name;
+                appSelect.appendChild(opt);
+            });
         }
 
         // 渲染主畫面
@@ -325,7 +375,6 @@
             `;
         }
 
-        // 控制 Modal 互動
         function openNewCapsuleModal() {
             document.getElementById('capsuleModal').classList.remove('hidden');
             document.getElementById('capsuleTitleInput').value = '';
