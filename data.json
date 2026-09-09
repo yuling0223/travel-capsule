@@ -38,6 +38,12 @@
         "type": "link",
         "name": "富邦旅保（靈）",
         "content": "https://fubon.one/W2f2a"
+      },
+      {
+        "id": "1788977388222",
+        "type": "app",
+        "name": "Google calendar",
+        "content": "googlecalendar://⁠"
       }
     ]
   },
