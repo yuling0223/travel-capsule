@@ -44,6 +44,12 @@
         "type": "note",
         "name": "美食筆記",
         "content": "Aaaa"
+      },
+      {
+        "id": "1788978190776",
+        "type": "link",
+        "name": "貨幣轉換",
+        "content": "https://www.xe.com/zh-hk/currencyconverter/convert/?Amount=1000&From=TWD&To=KRW"
       }
     ]
   },
