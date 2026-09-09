@@ -16,6 +16,12 @@
         "content": "kakaot://"
       },
       {
+        "id": "1788978190776",
+        "type": "link",
+        "name": "貨幣轉換",
+        "content": "https://www.xe.com/zh-hk/currencyconverter/convert/?Amount=1000&From=TWD&To=KRW"
+      },
+      {
         "id": "1788977388222",
         "type": "app",
         "name": "Google calendar",
@@ -38,12 +44,6 @@
         "type": "link",
         "name": "富邦旅保（靈）",
         "content": "https://fubon.one/W2f2a"
-      },
-      {
-        "id": "1788978190776",
-        "type": "link",
-        "name": "貨幣轉換",
-        "content": "https://www.xe.com/zh-hk/currencyconverter/convert/?Amount=1000&From=TWD&To=KRW"
       }
     ]
   },
