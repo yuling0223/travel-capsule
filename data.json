@@ -26,6 +26,12 @@
         "type": "note",
         "name": "美食筆記",
         "content": "Aaaa"
+      },
+      {
+        "id": "1788971005722",
+        "type": "file",
+        "name": "美食清單",
+        "content": "https://www.icloud.com/notes/0afOzKWHggxkjiLN3f_QsdaYg"
       }
     ]
   },
