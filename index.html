@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Travel Capsule - 雙層架構雲端版</title>
+    <title>Travel Capsule - 雲端硬碟連結優化版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -37,7 +37,7 @@
 
         <div id="loading-text" class="text-center py-12 text-sm text-slate-400 hidden">正在從 GitHub 同步資料...</div>
 
-        <!-- 動態視圖容器 (首頁清單 or 詳情頁) -->
+        <!-- 動態視圖容器 -->
         <div id="app-view">
             <!-- 畫面會由 JavaScript 動態渲染 -->
         </div>
@@ -97,7 +97,7 @@
                     <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white" onchange="handleTypeChange()">
                         <option value="link">🌐 一般網頁連結 (URL)</option>
                         <option value="app">📱 喚醒手機 App (依國家選擇)</option>
-                        <option value="file">📁 檔案/雲端硬碟路徑</option>
+                        <option value="file">📁 檔案/雲端硬碟路徑 (可貼連結)</option>
                         <option value="note">📝 隨手筆記/資訊</option>
                     </select>
                 </div>
@@ -106,7 +106,7 @@
                     <input type="text" id="itemName" placeholder="例如：Naver Map 導航" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div id="contentFieldContainer">
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址</label>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
                     <input type="text" id="itemContent" placeholder="https://..." class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -132,8 +132,10 @@
     <script>
         let capsules = [];
         let fileSha = null;
-        let currentView = 'home'; // 'home' 或 'detail'
-        let activeCapsuleId = null; // 當前在詳情頁的包裝 ID
+        let currentView = 'home';
+        let activeCapsuleId = null;
+        let activeItemId = null;
+        let isEditingItem = false;
 
         const countryApps = {
             kr: {
@@ -267,25 +269,34 @@
             }
         }
 
-        // 切換檢視畫面控制
         function goToHome() {
             currentView = 'home';
             activeCapsuleId = null;
+            activeItemId = null;
+            isEditingItem = false;
             render();
         }
 
         function goToDetail(capsuleId) {
             currentView = 'detail';
             activeCapsuleId = capsuleId;
+            activeItemId = null;
+            isEditingItem = false;
             render();
         }
 
-        // 主渲染分配函式
+        function goToItemDetail(capsuleId, itemId) {
+            currentView = 'itemDetail';
+            activeCapsuleId = capsuleId;
+            activeItemId = itemId;
+            isEditingItem = false;
+            render();
+        }
+
         function render() {
             const container = document.getElementById('app-view');
             const titleEl = document.getElementById('main-title');
             const subtitleEl = document.getElementById('main-subtitle');
-            const actionsEl = id => document.getElementById('header-actions');
 
             if (currentView === 'home') {
                 titleEl.textContent = "📦 Travel Capsule";
@@ -330,30 +341,35 @@
                     
                     if (item.type === 'link') {
                         icon = '🌐';
-                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium">開啟</a>`;
+                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium" onclick="event.stopPropagation()">開啟</a>`;
                     } else if (item.type === 'app') {
                         icon = '📱';
-                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium">喚醒 App</a>`;
+                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium" onclick="event.stopPropagation()">喚醒 App</a>`;
                     } else if (item.type === 'file') {
                         icon = '📁';
-                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-xl font-mono">路徑</span>`;
+                        // 如果內容是網址，右側按鈕直接變成「開啟檔案」，否則顯示「路徑」
+                        if (item.content.startsWith('http')) {
+                            actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-medium" onclick="event.stopPropagation()">開啟檔案</a>`;
+                        } else {
+                            actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-xl font-mono">路徑</span>`;
+                        }
                     } else if (item.type === 'note') {
                         icon = '📝';
                         actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-xl">備忘</span>`;
                     }
 
                     return `
-                        <div class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div onclick="goToItemDetail('${target.id}', '${item.id}')" class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group">
                             <div class="flex items-center space-x-3 overflow-hidden mr-2">
                                 <span class="text-base shrink-0">${icon}</span>
                                 <div class="truncate">
-                                    <p class="text-xs font-bold text-slate-700 truncate">${item.name}</p>
+                                    <p class="text-xs font-bold text-slate-700 group-hover:text-blue-600 truncate">${item.name}</p>
                                     <p class="text-[11px] text-slate-400 truncate">${item.content}</p>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-2 shrink-0">
                                 ${actionHtml}
-                                <button onclick="confirmDeleteItem('${target.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-base">×</button>
+                                <button onclick="event.stopPropagation(); confirmDeleteItem('${target.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-base">×</button>
                             </div>
                         </div>
                     `;
@@ -377,10 +393,99 @@
                         + 新增資源 / 喚醒 App 到此包裝
                     </button>
                 `;
+
+            } else if (currentView === 'itemDetail') {
+                const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
+                if (!targetCapsule) { goToHome(); return; }
+                const targetItem = (targetCapsule.items || []).find(i => i.id == activeItemId);
+                if (!targetItem) { goToDetail(activeCapsuleId); return; }
+
+                titleEl.textContent = targetItem.name;
+                subtitleEl.textContent = "資源詳細資訊";
+
+                // 如果是檔案路徑且包含網址，在詳情頁額外提供一個明顯的開啟按鈕
+                let openDirectButton = '';
+                if (targetItem.type === 'file' && targetItem.content.startsWith('http')) {
+                    openDirectButton = `<a href="${targetItem.content}" target="_blank" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center">📁 開啟雲端檔案</a>`;
+                } else if (targetItem.type === 'link') {
+                    openDirectButton = `<a href="${targetItem.content}" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center">🌐 前往網頁</a>`;
+                }
+
+                container.innerHTML = `
+                    <div class="mb-4 flex justify-between items-center">
+                        <button onclick="goToDetail('${targetCapsule.id}')" class="inline-flex items-center text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition">
+                            ⬅️ 返回包裝
+                        </button>
+                        <div class="flex items-center space-x-2">
+                            ${openDirectButton}
+                            ${!isEditingItem ? `
+                                <button onclick="toggleEditItem(true)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition">
+                                    ✏️ 編輯
+                                </button>
+                            ` : `
+                                <button onclick="saveEditedItem('${targetCapsule.id}', '${targetItem.id}')" class="bg-blue-600 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm">
+                                    💾 儲存
+                                </button>
+                            `}
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">資源類型</label>
+                            <p class="text-xs font-bold text-slate-700 uppercase">${targetItem.type}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">名稱 / 標題</label>
+                            ${isEditingItem ? `
+                                <input type="text" id="editItemName" value="${targetItem.name}" class="w-full border rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            ` : `
+                                <p class="text-sm font-bold text-slate-800">${targetItem.name}</p>
+                            `}
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">內容 / 網址 / 路徑 / 筆記</label>
+                            ${isEditingItem ? `
+                                <textarea id="editItemContent" rows="5" class="w-full border rounded-xl p-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">${targetItem.content}</textarea>
+                            ` : `
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 break-all whitespace-pre-wrap">${targetItem.content}</div>
+                            `}
+                        </div>
+                    </div>
+                `;
             }
         }
 
-        // 新增與刪除互動邏輯
+        function toggleEditItem(status) {
+            isEditingItem = status;
+            render();
+        }
+
+        async function saveEditedItem(capsuleId, itemId) {
+            const newName = document.getElementById('editItemName').value.trim();
+            const newContent = document.getElementById('editItemContent').value.trim();
+
+            if (!newName || !newContent) {
+                alert('名稱與內容不得為空！');
+                return;
+            }
+
+            const targetCapsule = capsules.find(c => c.id == capsuleId);
+            if (targetCapsule) {
+                const targetItem = targetCapsule.items.find(i => i.id == itemId);
+                if (targetItem) {
+                    targetItem.name = newName;
+                    targetItem.content = newContent;
+                }
+            }
+
+            isEditingItem = false;
+            render();
+            await saveDataToGitHub();
+        }
+
         function openNewCapsuleModal() {
             document.getElementById('capsuleModal').classList.remove('hidden');
             document.getElementById('capsuleTitleInput').value = '';
@@ -399,7 +504,7 @@
             };
             capsules.push(newCap);
             closeNewCapsuleModal();
-            goToDetail(newCap.id); // 建立後直接進入該包裝詳情頁
+            goToDetail(newCap.id);
             await saveDataToGitHub();
         }
 
@@ -464,6 +569,11 @@
                     <input type="text" id="customAppInput" placeholder="例如：instagram://" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 `;
                 updateAppOptions();
+            } else if (type === 'file') {
+                container.innerHTML = `
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">雲端硬碟連結 (建議貼上網址)</label>
+                    <input type="text" id="itemContent" placeholder="https://drive.google.com/..." class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                `;
             } else {
                 container.innerHTML = `
                     <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 備忘說明</label>
