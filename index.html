@@ -2,32 +2,35 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Capsule - 依國家喚醒 App 版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Travel Capsule - 防誤觸安全版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto px-4 py-6">
         <!-- 頂部標題與按鈕區 -->
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b pb-4 gap-4">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p class="text-sm text-slate-500">依國家與情境打包旅遊網頁、App 捷徑與雲端資料（GitHub 雲端同步）</p>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
+                <p class="text-xs sm:text-sm text-slate-500">旅遊包裝與 App 快速喚醒工具（GitHub 雲端同步）</p>
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="openConfigModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition">
-                    ⚙️ 設定 GitHub
+            <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                <button onclick="fetchDataFromGitHub()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition" title="重新載入/同步資料">
+                    🔄 同步
                 </button>
-                <button onclick="openNewCapsuleModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                    + 建立新旅行包裝
+                <button onclick="openConfigModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition">
+                    ⚙️ 設定
+                </button>
+                <button onclick="openNewCapsuleModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition shadow-sm">
+                    + 新旅行包裝
                 </button>
             </div>
         </header>
 
         <!-- 連線狀態提示 -->
-        <div id="status-banner" class="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex justify-between items-center hidden">
+        <div id="status-banner" class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex justify-between items-center hidden">
             <span id="status-text">尚未設定 GitHub 憑證</span>
             <button onclick="openConfigModal()" class="underline font-bold">立即設定</button>
         </div>
@@ -35,58 +38,63 @@
         <div id="loading-text" class="text-center py-12 text-sm text-slate-400 hidden">正在從 GitHub 同步資料...</div>
 
         <!-- 包裝列表容器 -->
-        <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <!-- 動態渲染卡片位置 -->
         </div>
     </div>
 
     <!-- GitHub 設定 Modal -->
-    <div id="configModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 class="text-lg font-bold mb-2">⚙️ 設定 GitHub 同步</h3>
+    <div id="configModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto">
+            <h3 class="text-base sm:text-lg font-bold mb-2">⚙️ 設定 GitHub 同步</h3>
             <p class="text-xs text-slate-500 mb-4">請填入你的 GitHub 資訊，資料將自動存放在你的專案倉庫中。</p>
             <div class="space-y-3 mb-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">GitHub 使用者名稱 (Username)</label>
-                    <input type="text" id="ghUser" placeholder="例如：yuling0223" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="ghUser" placeholder="例如：yuling0223" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">專案倉庫名稱 (Repository Name)</label>
-                    <input type="text" id="ghRepo" placeholder="例如：travel-notes" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="ghRepo" placeholder="例如：travel-notes" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Personal Access Token</label>
-                    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
             <div class="flex justify-end space-x-2">
-                <button onclick="closeConfigModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
-                <button onclick="saveGitHubConfig()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存並同步</button>
+                <button onclick="closeConfigModal()" class="px-4 py-2 text-xs sm:text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+                <button onclick="saveGitHubConfig()" class="px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">儲存並同步</button>
             </div>
         </div>
     </div>
 
     <!-- 建立新包裝 Modal -->
-    <div id="capsuleModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 class="text-lg font-bold mb-4">建立新的旅行包裝</h3>
-            <input type="text" id="capsuleTitleInput" placeholder="例如：2026 首爾自由行 🇰🇷" class="w-full border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <div id="capsuleModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto">
+            <h3 class="text-base sm:text-lg font-bold mb-4">建立新的旅行包裝</h3>
+            <input type="text" id="capsuleTitleInput" placeholder="例如：2026 首爾自由行 🇰🇷" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <div class="flex justify-end space-x-2">
-                <button onclick="closeNewCapsuleModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
-                <button onclick="createCapsule()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">建立</button>
+                <button onclick="closeNewCapsuleModal()" class="px-4 py-2 text-xs sm:text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+                <button onclick="createCapsule()" class="px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">建立</button>
             </div>
         </div>
     </div>
 
     <!-- 新增資源 Modal -->
-    <div id="itemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 class="text-lg font-bold mb-4">新增資源到包裝</h3>
+    <div id="itemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto max-h-[90vh] flex flex-col">
+            <h3 class="text-base sm:text-lg font-bold mb-3">新增資源到包裝</h3>
+            
+            <div id="modalError" class="mb-3 p-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs hidden">
+                請填寫完整名稱與內容！
+            </div>
+
             <input type="hidden" id="targetCapsuleId">
-            <div class="space-y-3 mb-4">
+            <div class="space-y-3 mb-4 overflow-y-auto flex-1 pr-1">
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">資源類型</label>
-                    <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-sm bg-white" onchange="handleTypeChange()">
+                    <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white" onchange="handleTypeChange()">
                         <option value="link">🌐 一般網頁連結 (URL)</option>
                         <option value="app">📱 喚醒手機 App (依國家選擇)</option>
                         <option value="file">📁 檔案/雲端硬碟路徑</option>
@@ -95,17 +103,28 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">名稱 / 標題</label>
-                    <input type="text" id="itemName" placeholder="例如：Naver Map 導航" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="itemName" placeholder="例如：Naver Map 導航" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <!-- 根據不同類型動態顯示的內容輸入框 -->
                 <div id="contentFieldContainer">
                     <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址</label>
-                    <input type="text" id="itemContent" placeholder="https://..." class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="itemContent" placeholder="https://..." class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
-            <div class="flex justify-end space-x-2">
-                <button onclick="closeItemModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
-                <button onclick="createItem()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">新增</button>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 shrink-0">
+                <button onclick="closeItemModal()" class="px-4 py-2 text-xs sm:text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+                <button onclick="createItem()" class="px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">新增</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂美化確認對話框 (取代傳統簡陋的 alert/confirm) -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
+            <h3 id="confirmTitle" class="text-base font-bold text-slate-900 mb-2">確定要刪除嗎？</h3>
+            <p id="confirmDesc" class="text-xs text-slate-500 mb-6">刪除後將同步至雲端，無法復原。</p>
+            <div class="flex justify-center space-x-3">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">取消</button>
+                <button id="confirmYesBtn" class="flex-1 px-4 py-2.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl">確定刪除</button>
             </div>
         </div>
     </div>
@@ -113,8 +132,8 @@
     <script>
         let capsules = [];
         let fileSha = null;
+        let deleteActionCallback = null; // 用於確認對話框的動作暫存
 
-        // 各國常用 App 對應清單
         const countryApps = {
             kr: {
                 name: "🇰🇷 韓國",
@@ -155,7 +174,7 @@
                 fetchDataFromGitHub();
             } else {
                 document.getElementById('status-banner').classList.remove('hidden');
-                renderEmptyState("尚未設定 GitHub 憑證，請點擊右上角「設定 GitHub」完成連線。");
+                renderEmptyState("尚未設定 GitHub 憑證，請點擊右上角「設定」完成連線。");
             }
         });
 
@@ -203,11 +222,10 @@
                     const decodedContent = decodeURIComponent(escape(atob(data.content)));
                     capsules = JSON.parse(decodedContent);
                 } else {
-                    alert('讀取 GitHub 失敗，請檢查帳號、專案名稱或 Token 是否正確。');
+                    alert('讀取 GitHub 失敗，請檢查設定是否正確。');
                 }
             } catch (e) {
                 console.error(e);
-                alert('網路連線錯誤');
             }
 
             document.getElementById('loading-text').classList.add('hidden');
@@ -224,12 +242,10 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data with Country-based App launcher",
+                message: "Update travel capsules data safely",
                 content: base64Content
             };
-            if (fileSha) {
-                bodyData.sha = fileSha;
-            }
+            if (fileSha) bodyData.sha = fileSha;
 
             try {
                 const response = await fetch(apiUrl, {
@@ -244,17 +260,12 @@
                 if (response.ok) {
                     const resData = await response.json();
                     fileSha = resData.content.sha;
-                } else {
-                    const err = await response.json();
-                    alert('同步至 GitHub 失敗：' + err.message);
                 }
             } catch (e) {
                 console.error(e);
-                alert('儲存至 GitHub 發生錯誤');
             }
         }
 
-        // 動態切換新增項目欄位（支援國家選單聯動）
         function handleTypeChange() {
             const type = document.getElementById('itemType').value;
             const container = document.getElementById('contentFieldContainer');
@@ -262,32 +273,32 @@
             if (type === 'app') {
                 container.innerHTML = `
                     <label class="block text-xs font-semibold text-slate-500 mb-1">1. 選擇國家</label>
-                    <select id="appCountrySelect" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2" onchange="updateAppOptions()">
+                    <select id="appCountrySelect" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2" onchange="updateAppOptions()">
                         <option value="kr">🇰🇷 韓國</option>
                         <option value="jp">🇯🇵 日本</option>
                         <option value="global">🌍 通用 / 其他</option>
                     </select>
 
                     <label class="block text-xs font-semibold text-slate-500 mb-1">2. 選擇常用 App</label>
-                    <select id="itemContent" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2">
+                    <select id="appSchemeSelect" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
                         <!-- 動態帶入 -->
                     </select>
 
-                    <input type="text" id="customAppInput" placeholder="或手動輸入自訂 App Scheme (例如 instagram://)" class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">3. 或手動輸入自訂 Scheme (選填)</label>
+                    <input type="text" id="customAppInput" placeholder="例如：instagram://" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 `;
-                updateAppOptions(); // 初始化載入韓國的 App
+                updateAppOptions();
             } else {
                 container.innerHTML = `
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
-                    <input type="text" id="itemContent" placeholder="https://... 或 檔案路徑 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 備忘說明</label>
+                    <input type="text" id="itemContent" placeholder="https://... 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 `;
             }
         }
 
-        // 根據選擇的國家更新 App 下拉清單
         function updateAppOptions() {
             const countryKey = document.getElementById('appCountrySelect').value;
-            const appSelect = document.getElementById('itemContent');
+            const appSelect = document.getElementById('appSchemeSelect');
             const apps = countryApps[countryKey].apps;
 
             appSelect.innerHTML = '';
@@ -299,7 +310,6 @@
             });
         }
 
-        // 渲染主畫面
         function render() {
             const container = document.getElementById('capsule-container');
             container.innerHTML = '';
@@ -316,49 +326,49 @@
                     
                     if (item.type === 'link') {
                         icon = '🌐';
-                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-medium">開啟</a>`;
+                        actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg font-medium">開啟</a>`;
                     } else if (item.type === 'app') {
                         icon = '📱';
-                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-medium">喚醒 App</a>`;
+                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-lg font-medium">喚醒 App</a>`;
                     } else if (item.type === 'file') {
                         icon = '📁';
-                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded font-mono">路徑</span>`;
+                        actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded font-mono">路徑</span>`;
                     } else if (item.type === 'note') {
                         icon = '📝';
-                        actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded">備忘</span>`;
+                        actionHtml = `<span class="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded">備忘</span>`;
                     }
 
                     return `
-                        <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg hover:bg-slate-100/80 transition group">
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                             <div class="flex items-center space-x-2 overflow-hidden mr-2">
-                                <span class="text-sm">${icon}</span>
+                                <span class="text-sm shrink-0">${icon}</span>
                                 <div class="truncate">
-                                    <p class="text-xs font-semibold text-slate-700 truncate">${item.name}</p>
-                                    <p class="text-[10px] text-slate-400 truncate">${item.content}</p>
+                                    <p class="text-xs font-bold text-slate-700 truncate">${item.name}</p>
+                                    <p class="text-[11px] text-slate-400 truncate">${item.content}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center space-x-1 shrink-0">
+                            <div class="flex items-center space-x-1.5 shrink-0">
                                 ${actionHtml}
-                                <button onclick="deleteItem('${cap.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-xs">×</button>
+                                <button onclick="confirmDeleteItem('${cap.id}', '${item.id}')" class="text-slate-300 hover:text-red-500 px-1 text-base" title="刪除此項目">×</button>
                             </div>
                         </div>
                     `;
                 }).join('');
 
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden';
+                card.className = 'bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between overflow-hidden';
                 card.innerHTML = `
-                    <div class="p-5">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="font-bold text-slate-800 text-base">${cap.title}</h2>
-                            <button onclick="deleteCapsule('${cap.id}')" class="text-slate-400 hover:text-red-500 text-sm">刪除包裝</button>
+                    <div class="p-4 sm:p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="font-bold text-slate-800 text-sm sm:text-base">${cap.title}</h2>
+                            <button onclick="confirmDeleteCapsule('${cap.id}')" class="text-slate-400 hover:text-red-500 text-xs">刪除包裝</button>
                         </div>
-                        <div class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                        <div class="space-y-2 mb-3 max-h-60 overflow-y-auto pr-1">
                             ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-4">這個包裝還空空如也，快新增資料吧！</p>'}
                         </div>
                     </div>
-                    <div class="bg-slate-50 px-5 py-3 border-t border-slate-100 flex justify-between items-center">
-                        <button onclick="openItemModal('${cap.id}')" class="text-xs text-blue-600 hover:text-blue-700 font-semibold">
+                    <div class="bg-slate-50/50 px-4 sm:px-5 py-3 border-t border-slate-100 flex justify-between items-center">
+                        <button onclick="openItemModal('${cap.id}')" class="text-xs text-blue-600 hover:text-blue-700 font-bold">
                             + 新增資料到此包裝
                         </button>
                     </div>
@@ -369,7 +379,7 @@
 
         function renderEmptyState(msg) {
             document.getElementById('capsule-container').innerHTML = `
-                <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-300 p-6">
+                <div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
                     ${msg}
                 </div>
             `;
@@ -397,18 +407,43 @@
             await saveDataToGitHub();
         }
 
-        async function deleteCapsule(id) {
-            if (confirm('確定要刪除這個旅行包裝嗎？')) {
+        // 防誤觸確認對話框邏輯
+        function confirmDeleteCapsule(id) {
+            document.getElementById('confirmTitle').textContent = "確定要刪除這個旅行包裝嗎？";
+            document.getElementById('confirmDesc').textContent = "刪除後該包裝內的所有資料將同步移除。";
+            document.getElementById('confirmYesBtn').onclick = async function() {
+                closeConfirmModal();
                 capsules = capsules.filter(c => c.id !== id);
                 render();
                 await saveDataToGitHub();
-            }
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function confirmDeleteItem(capsuleId, itemId) {
+            document.getElementById('confirmTitle').textContent = "確定要刪除這個項目嗎？";
+            document.getElementById('confirmDesc').textContent = "刪除後將無法復原。";
+            document.getElementById('confirmYesBtn').onclick = async function() {
+                closeConfirmModal();
+                const target = capsules.find(c => c.id == capsuleId);
+                if (target) {
+                    target.items = target.items.filter(i => i.id !== itemId);
+                    render();
+                    await saveDataToGitHub();
+                }
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
         }
 
         function openItemModal(capsuleId) {
             document.getElementById('targetCapsuleId').value = capsuleId;
             document.getElementById('itemName').value = '';
             document.getElementById('itemType').value = 'link';
+            document.getElementById('modalError').classList.add('hidden');
             handleTypeChange();
             document.getElementById('itemModal').classList.remove('hidden');
         }
@@ -418,16 +453,23 @@
             const capsuleId = document.getElementById('targetCapsuleId').value;
             const type = document.getElementById('itemType').value;
             const name = document.getElementById('itemName').value.trim();
+            const errorBox = document.getElementById('modalError');
             
             let content = '';
             if (type === 'app') {
                 const customInput = document.getElementById('customAppInput');
-                content = customInput && customInput.value.trim() ? customInput.value.trim() : document.getElementById('itemContent').value;
+                const schemeSelect = document.getElementById('appSchemeSelect');
+                content = customInput && customInput.value.trim() ? customInput.value.trim() : (schemeSelect ? schemeSelect.value : '');
             } else {
-                content = document.getElementById('itemContent').value.trim();
+                const contentInput = document.getElementById('itemContent');
+                content = contentInput ? contentInput.value.trim() : '';
             }
 
-            if (!name || !content) return alert('請填寫完整名稱與內容');
+            if (!name || !content) {
+                errorBox.classList.remove('hidden');
+                return;
+            }
+            errorBox.classList.add('hidden');
 
             const target = capsules.find(c => c.id == capsuleId);
             if (target) {
@@ -439,15 +481,6 @@
                     content
                 });
                 closeItemModal();
-                render();
-                await saveDataToGitHub();
-            }
-        }
-
-        async function deleteItem(capsuleId, itemId) {
-            const target = capsules.find(c => c.id == capsuleId);
-            if (target) {
-                target.items = target.items.filter(i => i.id !== itemId);
                 render();
                 await saveDataToGitHub();
             }
