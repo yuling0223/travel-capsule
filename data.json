@@ -44,12 +44,6 @@
         "type": "note",
         "name": "美食筆記",
         "content": "Aaaa"
-      },
-      {
-        "id": "1788978136305",
-        "type": "app",
-        "name": "貨幣轉換",
-        "content": "https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=TWD"
       }
     ]
   },
