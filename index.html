@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Capsule - GitHub 雲端卡片版</title>
+    <title>Travel Capsule - App 快速喚醒版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -14,7 +14,7 @@
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b pb-4 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p class="text-sm text-slate-500">將每次旅行所需的網頁、雲端資料與筆記完美打包（GitHub 雲端同步）</p>
+                <p class="text-sm text-slate-500">一鍵打包旅遊網頁、App 捷徑與雲端資料（GitHub 雲端同步）</p>
             </div>
             <div class="flex items-center space-x-2">
                 <button onclick="openConfigModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium transition">
@@ -34,7 +34,7 @@
 
         <div id="loading-text" class="text-center py-12 text-sm text-slate-400 hidden">正在從 GitHub 同步資料...</div>
 
-        <!-- 包裝列表容器 (維持原本的卡片 Grid 網格佈局) -->
+        <!-- 包裝列表容器 -->
         <div id="capsule-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- 動態渲染卡片位置 -->
         </div>
@@ -66,7 +66,7 @@
         </div>
     </div>
 
-    <!-- 建立新包裝彈跳視窗 Modal -->
+    <!-- 建立新包裝 Modal -->
     <div id="capsuleModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 class="text-lg font-bold mb-4">建立新的旅行包裝</h3>
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <!-- 新增資源彈跳視窗 Modal -->
+    <!-- 新增資源 Modal -->
     <div id="itemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <h3 class="text-lg font-bold mb-4">新增資源到包裝</h3>
@@ -86,19 +86,21 @@
             <div class="space-y-3 mb-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">資源類型</label>
-                    <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                        <option value="link">🌐 網頁/雲端連結 (URL)</option>
-                        <option value="file">📁 本機/雲端檔案路徑</option>
+                    <select id="itemType" class="w-full border rounded-lg px-3 py-2 text-sm bg-white" onchange="handleTypeChange()">
+                        <option value="link">🌐 一般網頁連結 (URL)</option>
+                        <option value="app">📱 喚醒手機 App (Naver/Google Map等)</option>
+                        <option value="file">📁 檔案/雲端硬碟路徑</option>
                         <option value="note">📝 隨手筆記/資訊</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">名稱 / 標題</label>
-                    <input type="text" id="itemName" placeholder="例如：Naver Map / 飯店地址" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="itemName" placeholder="例如：Naver Map 導航" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
-                    <input type="text" id="itemContent" placeholder="https://... 或 檔案路徑 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <!-- 根據不同類型動態顯示的內容輸入框 -->
+                <div id="contentFieldContainer">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址</label>
+                    <input type="text" id="itemContent" placeholder="https://..." class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
             <div class="flex justify-end space-x-2">
@@ -192,7 +194,7 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules data",
+                message: "Update travel capsules data with App launcher",
                 content: base64Content
             };
             if (fileSha) {
@@ -222,7 +224,32 @@
             }
         }
 
-        // 渲染主畫面（維持原本的卡片 Grid 佈局）
+        // 切換新增項目時的欄位呈現
+        function handleTypeChange() {
+            const type = document.getElementById('itemType').value;
+            const container = document.getElementById('contentFieldContainer');
+            
+            if (type === 'app') {
+                container.innerHTML = `
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">選擇要喚醒的 App / 或自訂 Scheme</label>
+                    <select id="itemContent" class="w-full border rounded-lg px-3 py-2 text-sm bg-white mb-2">
+                        <option value="navermap://">🗺️ Naver Map (導航)</option>
+                        <option value="kakaomap://">🗺️ Kakao Map (導航)</option>
+                        <option value="comgooglemaps://">🗺️ Google Maps (地圖)</option>
+                        <option value="kakaot://">🚕 Kakao T (叫車/計程車)</option>
+                        <option value="papago://">🗣️ Papago (翻譯)</option>
+                    </select>
+                    <input type="text" id="customAppInput" placeholder="或直接輸入自訂 App Scheme (例如 instagram://)" class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">內容 / 網址 / 路徑</label>
+                    <input type="text" id="itemContent" placeholder="https://... 或 檔案路徑 或 文字說明" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                `;
+            }
+        }
+
+        // 渲染主畫面
         function render() {
             const container = document.getElementById('capsule-container');
             container.innerHTML = '';
@@ -240,6 +267,9 @@
                     if (item.type === 'link') {
                         icon = '🌐';
                         actionHtml = `<a href="${item.content}" target="_blank" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-medium">開啟</a>`;
+                    } else if (item.type === 'app') {
+                        icon = '📱';
+                        actionHtml = `<a href="${item.content}" class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100 font-medium">喚醒 App</a>`;
                     } else if (item.type === 'file') {
                         icon = '📁';
                         actionHtml = `<span class="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded font-mono">路徑</span>`;
@@ -329,7 +359,8 @@
         function openItemModal(capsuleId) {
             document.getElementById('targetCapsuleId').value = capsuleId;
             document.getElementById('itemName').value = '';
-            document.getElementById('itemContent').value = '';
+            document.getElementById('itemType').value = 'link';
+            handleTypeChange();
             document.getElementById('itemModal').classList.remove('hidden');
         }
         function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
@@ -338,7 +369,14 @@
             const capsuleId = document.getElementById('targetCapsuleId').value;
             const type = document.getElementById('itemType').value;
             const name = document.getElementById('itemName').value.trim();
-            const content = document.getElementById('itemContent').value.trim();
+            
+            let content = '';
+            if (type === 'app') {
+                const customInput = document.getElementById('customAppInput');
+                content = customInput && customInput.value.trim() ? customInput.value.trim() : document.getElementById('itemContent').value;
+            } else {
+                content = document.getElementById('itemContent').value.trim();
+            }
 
             if (!name || !content) return alert('請填寫完整名稱與內容');
 
