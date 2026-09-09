@@ -3,18 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Travel Capsule - 拖拉排序雲端版</title>
+    <title>Travel Capsule - 手機觸控拖曳與視覺提示版</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 拖曳時的佔位與視覺提示樣式 */
+        .drag-over {
+            border: 2px dashed #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+        .dragging {
+            opacity: 0.4;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 select-none">
 
     <div class="max-w-4xl mx-auto px-4 py-6">
         <!-- 頂部標題與按鈕區 -->
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
             <div>
                 <h1 id="main-title" class="text-xl sm:text-2xl font-bold text-slate-900">📦 Travel Capsule</h1>
-                <p id="main-subtitle" class="text-xs sm:text-sm text-slate-500">旅遊包裝與 App 快速喚醒工具（GitHub 雲端同步）</p>
+                <p id="main-subtitle" class="text-xs sm:text-sm text-slate-500">旅遊包裝與 App 快速喚醒工具（支援手機觸控拖曳）</p>
             </div>
             <div id="header-actions" class="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button onclick="fetchDataFromGitHub()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition" title="重新同步資料">
@@ -136,7 +146,7 @@
         let activeCapsuleId = null;
         let activeItemId = null;
         let isEditingItem = false;
-        let draggedIndex = null; // 用於拖拉排序
+        let draggedIndex = null;
 
         const countryApps = {
             kr: {
@@ -246,7 +256,7 @@
             const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
             const bodyData = {
-                message: "Update travel capsules order and data",
+                message: "Update travel capsules order",
                 content: base64Content
             };
             if (fileSha) bodyData.sha = fileSha;
@@ -301,7 +311,7 @@
 
             if (currentView === 'home') {
                 titleEl.textContent = "📦 Travel Capsule";
-                subtitleEl.textContent = "選擇你的旅行包裝或建立新行程（可拖拉調整順序）";
+                subtitleEl.textContent = "選擇你的旅行包裝或建立新行程（按住 ☰ 即可上下拖曳排序）";
                 
                 if (capsules.length === 0) {
                     container.innerHTML = `
@@ -313,18 +323,16 @@
                     return;
                 }
 
-                let html = '<div class="space-y-3" id="capsule-list">';
+                let html = '<div class="space-y-3" id="sortable-container">';
                 capsules.forEach((cap, index) => {
                     const itemCount = (cap.items || []).length;
                     html += `
                         <div draggable="true" 
-                             ondragstart="onDragStartCapsule(event, ${index})" 
-                             ondragover="onDragOver(event)" 
-                             ondrop="onDropCapsule(event, ${index})"
-                             onclick="goToDetail('${cap.id}')" 
-                             class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center group">
+                             data-index="${index}"
+                             class="sortable-item bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-blue-300 transition flex justify-between items-center group cursor-pointer"
+                             onclick="goToDetail('${cap.id}')">
                             <div class="flex items-center space-x-3 overflow-hidden">
-                                <span class="text-slate-300 group-hover:text-slate-500 cursor-grab px-1 text-base select-none" title="按住拖拉排序">☰</span>
+                                <span class="drag-handle text-slate-300 hover:text-slate-600 cursor-move px-2 py-1 text-base select-none font-bold" title="按住拖拉">☰</span>
                                 <div class="truncate">
                                     <h2 class="font-bold text-slate-800 text-base group-hover:text-blue-600 transition truncate">${cap.title}</h2>
                                     <p class="text-xs text-slate-400 mt-0.5">包含 ${itemCount} 項資源與 App 捷徑</p>
@@ -336,13 +344,14 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
+                initDragAndDrop('capsule');
 
             } else if (currentView === 'detail') {
                 const target = capsules.find(c => c.id == activeCapsuleId);
                 if (!target) { goToHome(); return; }
 
                 titleEl.textContent = target.title;
-                subtitleEl.textContent = "行程專屬網頁、App 喚醒與備忘錄（可拖拉調整順序）";
+                subtitleEl.textContent = "行程專屬網頁、App 喚醒與備忘錄（按住 ☰ 即可拖曳排序）";
 
                 let itemsHtml = (target.items || []).map((item, index) => {
                     let icon = '🌐';
@@ -368,13 +377,11 @@
 
                     return `
                         <div draggable="true"
-                             ondragstart="onDragStartItem(event, ${index})"
-                             ondragover="onDragOver(event)"
-                             ondrop="onDropItem(event, ${index})"
-                             onclick="goToItemDetail('${target.id}', '${item.id}')" 
-                             class="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group">
+                             data-index="${index}"
+                             class="sortable-item flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group"
+                             onclick="goToItemDetail('${target.id}', '${item.id}')">
                             <div class="flex items-center space-x-3 overflow-hidden mr-2">
-                                <span class="text-slate-300 group-hover:text-slate-500 cursor-grab px-1 text-sm select-none" title="按住拖拉排序">☰</span>
+                                <span class="drag-handle text-slate-300 hover:text-slate-600 cursor-move px-2 py-1 text-sm select-none font-bold" title="按住拖拉">☰</span>
                                 <span class="text-base shrink-0">${icon}</span>
                                 <div class="truncate">
                                     <p class="text-xs font-bold text-slate-700 group-hover:text-blue-600 truncate">${item.name}</p>
@@ -399,7 +406,7 @@
                         </button>
                     </div>
 
-                    <div class="space-y-3 mb-4" id="item-list">
+                    <div class="space-y-3 mb-4" id="sortable-container">
                         ${itemsHtml || '<p class="text-xs text-slate-400 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">這個包裝還空空如也，快點下方新增資料吧！</p>'}
                     </div>
 
@@ -407,6 +414,7 @@
                         + 新增資源 / 喚醒 App 到此包裝
                     </button>
                 `;
+                initDragAndDrop('item');
 
             } else if (currentView === 'itemDetail') {
                 const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
@@ -471,50 +479,108 @@
             }
         }
 
-        // --- 拖拉排序事件處理函式 ---
-        function onDragStartCapsule(event, index) {
-            draggedIndex = index;
-            event.dataTransfer.effectAllowed = 'move';
+        // --- 完整支援電腦與手機觸控的拖拉排序與視覺提示引擎 ---
+        function initDragAndDrop(type) {
+            const container = document.getElementById('sortable-container');
+            if (!container) return;
+            const items = container.querySelectorAll('.sortable-item');
+
+            items.forEach(item => {
+                const handle = item.querySelector('.drag-handle');
+                
+                // 電腦滑鼠拖拉
+                item.addEventListener('dragstart', (e) => {
+                    draggedIndex = parseInt(item.getAttribute('data-index'));
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    clearHighlights();
+                });
+
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    items.forEach(i => i.classList.remove('drag-over'));
+                    item.classList.add('drag-over'); // 即時視覺提示框
+                });
+
+                item.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    const targetIndex = parseInt(item.getAttribute('data-index'));
+                    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                        if (type === 'capsule') {
+                            const moved = capsules.splice(draggedIndex, 1)[0];
+                            capsules.splice(targetIndex, 0, moved);
+                        } else {
+                            const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
+                            if (targetCapsule && targetCapsule.items) {
+                                const moved = targetCapsule.items.splice(draggedIndex, 1)[0];
+                                targetCapsule.items.splice(targetIndex, 0, moved);
+                            }
+                        }
+                        draggedIndex = null;
+                        render();
+                        await saveDataToGitHub();
+                    }
+                });
+
+                // 手機觸控支援 (Touch Drag 模擬)
+                let touchStartY = 0;
+                handle.addEventListener('touchstart', (e) => {
+                    draggedIndex = parseInt(item.getAttribute('data-index'));
+                    item.classList.add('dragging');
+                }, {passive: true});
+
+                handle.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const dropTarget = elementBelow ? elementBelow.closest('.sortable-item') : null;
+
+                    items.forEach(i => i.classList.remove('drag-over'));
+                    if (dropTarget && dropTarget !== item) {
+                        dropTarget.classList.add('drag-over'); // 手機移動時即時顯示位置提示
+                    }
+                }, {passive: false});
+
+                handle.addEventListener('touchend', async (e) => {
+                    item.classList.remove('dragging');
+                    const touch = e.changedTouches[0];
+                    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const dropTarget = elementBelow ? elementBelow.closest('.sortable-item') : null;
+
+                    clearHighlights();
+
+                    if (dropTarget) {
+                        const targetIndex = parseInt(dropTarget.getAttribute('data-index'));
+                        if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                            if (type === 'capsule') {
+                                const moved = capsules.splice(draggedIndex, 1)[0];
+                                capsules.splice(targetIndex, 0, moved);
+                            } else {
+                                const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
+                                if (targetCapsule && targetCapsule.items) {
+                                    const moved = targetCapsule.items.splice(draggedIndex, 1)[0];
+                                    targetCapsule.items.splice(targetIndex, 0, moved);
+                                }
+                            }
+                            draggedIndex = null;
+                            render();
+                            await saveDataToGitHub();
+                        }
+                    }
+                });
+            });
         }
 
-        function onDragOver(event) {
-            event.preventDefault(); // 必須阻止預設行為才能觸發 drop
-            event.dataTransfer.dropEffect = 'move';
+        function clearHighlights() {
+            document.querySelectorAll('.sortable-item').forEach(i => {
+                i.classList.remove('drag-over', 'dragging');
+            });
         }
-
-        async function onDropCapsule(event, targetIndex) {
-            event.preventDefault();
-            if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-            // 調整陣列順序
-            const movedItem = capsules.splice(draggedIndex, 1)[0];
-            capsules.splice(targetIndex, 0, movedItem);
-            draggedIndex = null;
-
-            render();
-            await saveDataToGitHub();
-        }
-
-        function onDragStartItem(event, index) {
-            draggedIndex = index;
-            event.dataTransfer.effectAllowed = 'move';
-        }
-
-        async function onDropItem(event, targetIndex) {
-            event.preventDefault();
-            if (draggedIndex === null || draggedIndex === targetIndex) return;
-
-            const targetCapsule = capsules.find(c => c.id == activeCapsuleId);
-            if (targetCapsule && targetCapsule.items) {
-                const movedItem = targetCapsule.items.splice(draggedIndex, 1)[0];
-                targetCapsule.items.splice(targetIndex, 0, movedItem);
-                draggedIndex = null;
-
-                render();
-                await saveDataToGitHub();
-            }
-        }
-        // -----------------------------
+        // -------------------------------------------------------------
 
         function toggleEditItem(status) {
             isEditingItem = status;
@@ -645,6 +711,7 @@
             const appSelect = document.getElementById('appSchemeSelect');
             const apps = countryApps[countryKey].apps;
 
+            appSelect.innerHTML = {};
             appSelect.innerHTML = '';
             apps.forEach(app => {
                 const opt = document.createElement('option');
@@ -656,7 +723,7 @@
 
         async function createItem() {
             const capsuleId = document.getElementById('targetCapsuleId').value;
-            const type = document.getElementById('itemType -> value' || 'itemType').value;
+            const type = document.getElementById('itemType').value;
             const name = document.getElementById('itemName').value.trim();
             const errorBox = document.getElementById('modalError');
             
